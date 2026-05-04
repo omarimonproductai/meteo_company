@@ -15,17 +15,9 @@ import os
 import time
 import calendar
 import urllib.request
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import date, timedelta
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import urlparse, parse_qs
-
-# Importa el fetcher intel·ligent (caché en disc)
-try:
-    import fetcher as _fetcher
-    _USE_FETCHER = True
-except ImportError:
-    _USE_FETCHER = False
 
 # ─── CIUTATS ───────────────────────────────────────────────────────────────────
 CITIES = [
@@ -53,9 +45,8 @@ CITIES_BY_NAME = {c["name"]: c for c in CITIES}
 # ─── CACHE ─────────────────────────────────────────────────────────────────────
 _cache         = {"data": None, "ts": 0}
 _history_cache = {}          # city_name -> {"data": {...}, "ts": timestamp}
-CACHE_TTL      = 21600       # 6 hores (el fetcher actualitza 4x/dia)
+CACHE_TTL      = 21600       # 6 hores
 HISTORY_TTL    = 86400       # 24 hores (historial)
-DISC_CACHE_MAX_AGE = 21600   # Accepta disc si té < 6 hores
 
 # ─── DATE HELPERS ──────────────────────────────────────────────────────────────
 def fmt(d):
@@ -127,46 +118,11 @@ def fetch_city(city):
 
     return city["name"], {"cur": cur, "ly": ly, "ly2": ly2}
 
-def _load_disc_cache():
-    """Carrega weather_latest.json del disc si existeix i és prou recent."""
-    if not _USE_FETCHER:
-        return None
-    path = _fetcher.WEATHER_LATEST
-    if not os.path.exists(path):
-        return None
-    try:
-        with open(path, encoding="utf-8") as f:
-            data = json.load(f)
-        age = time.time() - data.get("fetched_ts", 0)
-        if age < DISC_CACHE_MAX_AGE:
-            print(f"  [disc] weather_latest.json de fa {int(age)}s")
-            return data
-    except Exception as e:
-        print(f"  [disc] error llegint caché: {e}")
-    return None
-
-
 def fetch_all(force=False):
     now = time.time()
     if not force and _cache["data"] and (now - _cache["ts"]) < CACHE_TTL:
         print(f"  [cache] dades principals de fa {int(now-_cache['ts'])}s")
         return _cache["data"]
-
-    # Intenta llegir del disc (escrit pel fetcher)
-    if not force:
-        disc = _load_disc_cache()
-        if disc:
-            _cache["data"] = disc
-            _cache["ts"]   = now
-            return disc
-
-    # Si el fetcher està disponible, usa'l (gestiona caché intel·ligent)
-    if _USE_FETCHER:
-        print("  Actualitzant via fetcher intel·ligent...")
-        result = _fetcher.run_fetch(verbose=True)
-        _cache["data"] = result
-        _cache["ts"]   = now
-        return result
 
     print("  Descarregant dades principals (3 anys × 18 ciutats)...")
     t = date.today()
@@ -209,14 +165,6 @@ def fetch_city_history(city_name, force=False):
         if (now - cached["ts"]) < HISTORY_TTL:
             print(f"  [cache] historial {city_name} de fa {int(now-cached['ts'])}s")
             return cached["data"]
-
-    # Usa el fetcher intel·ligent si està disponible (caché incremental en disc)
-    if _USE_FETCHER:
-        print(f"  Historial {city_name} via fetcher intel·ligent...")
-        result = _fetcher.fetch_city_history_smart(city_name)
-        _history_cache[city_name] = {"data": result, "ts": now}
-        print(f"  ✓ Historial {city_name} llest.")
-        return result
 
     city = CITIES_BY_NAME.get(city_name)
     if not city:
