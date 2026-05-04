@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cooltra Meteo</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='sky' x1='0%25' y1='0%25' x2='0%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%234FC3F7'/%3E%3Cstop offset='100%25' style='stop-color:%230288D1'/%3E%3C/linearGradient%3E%3ClinearGradient id='cl' x1='0%25' y1='0%25' x2='0%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23ECEFF1'/%3E%3Cstop offset='100%25' style='stop-color:%23B0BEC5'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='16' cy='16' r='15' fill='url(%23sky)'/%3E%3Cellipse cx='16' cy='15' rx='9' ry='5.5' fill='url(%23cl)'/%3E%3Ccircle cx='11' cy='15' r='4.5' fill='url(%23cl)'/%3E%3Ccircle cx='19' cy='13.5' r='5' fill='url(%23cl)'/%3E%3Cline x1='11' y1='22' x2='9.5' y2='26.5' stroke='%2329B6F6' stroke-width='1.8' stroke-linecap='round'/%3E%3Cline x1='16' y1='22' x2='14.5' y2='26.5' stroke='%2329B6F6' stroke-width='1.8' stroke-linecap='round'/%3E%3Cline x1='21' y1='22' x2='19.5' y2='26.5' stroke='%2329B6F6' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f1f3f6; color: #1f2937; font-size: 13px; display: flex; flex-direction: column; }
+    header, .tabs, .sub-controls { flex: 0 0 auto; }
+    .main { flex: 1 1 auto; overflow: hidden; display: flex; flex-direction: column; min-height: 0; }
+    #viewContainer { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; overflow: auto; }
+    .card { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; }
+    .tscroll { flex: 1 1 auto; min-height: 0; max-height: calc(100vh - 140px); }
+
+    /* ── HEADER ─── */
+    header { background: #111827; color: #fff; padding: 11px 22px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    header h1 { font-size: 16px; font-weight: 700; }
+    .header-meta { font-size: 10px; opacity: 0.45; margin-top: 1px; }
+    .hdr-right { display: flex; align-items: center; gap: 10px; }
+    #lastFetch { font-size: 11px; opacity: 0.5; }
+    .btn-dark { background: #374151; color: #fff; border: none; border-radius: 6px; padding: 5px 11px; font-size: 11px; cursor: pointer; }
+    .btn-dark:hover { background: #4b5563; }
+    .btn-dark:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ── TABS ─── */
+    .tabs { background: #fff; border-bottom: 1px solid #e5e7eb; padding: 0 22px; display: flex; overflow-x: auto; }
+    .tab-btn { padding: 10px 18px; border: none; background: none; cursor: pointer; font-size: 13px; font-weight: 500; color: #6b7280; border-bottom: 2px solid transparent; white-space: nowrap; transition: color .15s, border-color .15s; }
+    .tab-btn:hover  { color: #374151; }
+    .tab-btn.active { color: #111827; border-bottom-color: #111827; }
+
+    /* ── SUB-CONTROLS ─── */
+    .sub-controls { background: #f9fafb; border-bottom: 1px solid #e5e7eb; padding: 8px 22px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; min-height: 42px; }
+    .sub-controls.hidden { display: none; }
+
+    /* Toggle pill buttons */
+    .toggle-group { display: flex; gap: 4px; }
+    .pill { padding: 4px 12px; border-radius: 20px; border: 1.5px solid #d1d5db; background: #fff; cursor: pointer; font-size: 12px; font-weight: 600; color: #6b7280; transition: all .15s; white-space: nowrap; }
+    .pill.on-2026 { border-color: #1d4ed8; background: #dbeafe; color: #1d4ed8; }
+    .pill.on-2025 { border-color: #f97316; background: #fff7ed; color: #ea580c; }
+    .pill.on-2024 { border-color: #7c3aed; background: #ede9fe; color: #6d28d9; }
+    .pill.on-hide { border-color: #374151; background: #374151; color: #fff; }
+    .pill:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    .sc-sep { width: 1px; height: 22px; background: #e5e7eb; margin: 0 4px; align-self: center; }
+
+    /* Charts view legend */
+    .chart-legend { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; font-size: 11px; }
+    .cl-item { display: flex; align-items: center; gap: 5px; }
+    .cl-bar { width: 16px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+    .cl-line { width: 22px; height: 3px; border-radius: 2px; flex-shrink: 0; }
+    .cl-line.dashed { background: repeating-linear-gradient(90deg, currentColor 0, currentColor 4px, transparent 4px, transparent 7px); }
+
+    /* History city selector */
+    .city-select-wrap { display: flex; align-items: center; gap: 8px; }
+    .city-select-wrap label { font-size: 12px; font-weight: 600; color: #374151; }
+    select#citySelector { padding: 4px 10px; border: 1.5px solid #d1d5db; border-radius: 6px; font-size: 12px; background: #fff; cursor: pointer; }
+
+    /* ── MAIN ─── */
+    .main { padding: 14px 22px; }
+
+    .loading-wrap { text-align: center; padding: 70px 20px; color: #6b7280; }
+    .spin { display: inline-block; width: 26px; height: 26px; border: 3px solid #e5e7eb; border-top-color: #111827; border-radius: 50%; animation: spin .7s linear infinite; vertical-align: middle; margin-right: 8px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .error-box { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; padding: 14px 18px; border-radius: 8px; font-size: 13px; line-height: 1.7; }
+    .error-box code { font-size: 11px; font-family: monospace; background: rgba(0,0,0,0.06); padding: 1px 5px; border-radius: 3px; }
+
+    .card { background: #fff; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,.07), 0 4px 12px rgba(0,0,0,.04); overflow: hidden; }
+
+    /* ═══════════════════════════════════════
+       VISTA 1 — TAULA COMPARATIVA
+    ═══════════════════════════════════════ */
+    .tscroll { overflow: auto; }
+    table   { border-collapse: separate; border-spacing: 0; width: max-content; min-width: 100%; }
+    th, td  { padding: 0; border-right: 1px solid #f3f4f6; border-bottom: 1px solid #f3f4f6; }
+
+    /* Sticky header (fixa en fer scroll vertical) */
+    thead th { position: sticky; top: 0; z-index: 4; background: #fff; }
+    thead th.col-city { z-index: 6; }
+    thead .hd-past   { background: #f9fafb !important; }
+    thead .hd-today  { background: #fef9c3 !important; }
+    thead .hd-future { background: #eff6ff !important; }
+    thead .hd-yr2    { background: #fff7ed !important; }
+    thead .hd-yr3    { background: #faf5ff !important; }
+
+    .col-city { position: sticky; left: 0; z-index: 3; background: #fff; min-width: 115px; max-width: 115px; padding: 5px 10px; font-weight: 600; white-space: nowrap; cursor: pointer; color: #111827; border-right: 2px solid #e5e7eb; }
+    .col-city:hover { color: #2563eb; text-decoration: underline; }
+    thead .col-city { cursor: default; color: #fff !important; background: #111827 !important; text-decoration: none !important; }
+
+    .col-date { min-width: 44px; max-width: 44px; text-align: center; font-size: 10px; font-weight: 500; padding: 4px 2px; line-height: 1.35; }
+    .hd-past   { background: #f9fafb; color: #6b7280; }
+    .hd-today  { background: #fef9c3; color: #92400e; font-weight: 700; }
+    .hd-future { background: #eff6ff; color: #1d4ed8; }
+    .hd-yr2    { background: #fff7ed; color: #9a3412; font-size: 9px; }
+    .hd-yr3    { background: #faf5ff; color: #581c87; font-size: 9px; }
+
+    .group-row td { background: #1f2937; color: #d1d5db; font-size: 10px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; padding: 4px 10px; position: sticky; left: 0; }
+
+    .dcell { text-align: center; min-width: 44px; max-width: 44px; padding: 3px 2px; vertical-align: middle; }
+    .dcell .t { font-size: 11px; font-weight: 700; line-height: 1.3; }
+    .dcell .r { font-size: 9px; line-height: 1.3; opacity: .9; }
+    .today-cell { outline: 2px solid rgba(234,179,8,.6); outline-offset: -2px; }
+    .nodata { color: #d1d5db; font-size: 10px; }
+
+    .yr-sep { width: 5px !important; max-width: 5px !important; min-width: 5px !important; background: #e5e7eb; padding: 0 !important; border: none !important; }
+
+    .subrow-2025 .col-city { font-size: 10px; color: #ea580c; font-weight: 500; padding-left: 18px; background: #fffaf7; }
+    .subrow-2024 .col-city { font-size: 10px; color: #7c3aed; font-weight: 500; padding-left: 18px; background: #fdf8ff; }
+    .subrow-2025 .dcell .t, .subrow-2025 .dcell .r { font-size: 9px; }
+    .subrow-2024 .dcell .t, .subrow-2024 .dcell .r { font-size: 9px; }
+
+    [data-tip] { position: relative; }
+    [data-tip]:hover::after { content: attr(data-tip); position: absolute; bottom: calc(100% + 5px); left: 50%; transform: translateX(-50%); background: rgba(17,24,39,.92); color: #fff; padding: 4px 9px; border-radius: 5px; font-size: 10px; white-space: nowrap; z-index: 500; pointer-events: none; }
+
+    /* ═══════════════════════════════════════
+       VISTA 2 — GRÀFICS PER CIUTAT
+    ═══════════════════════════════════════ */
+    .charts-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; }
+    @media (max-width: 1100px) { .charts-grid { grid-template-columns: repeat(2,1fr); } }
+    @media (max-width: 680px)  { .charts-grid { grid-template-columns: 1fr; } }
+
+    .city-card { background: #fff; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,.07), 0 4px 12px rgba(0,0,0,.04); padding: 12px 14px; }
+    .city-card-title { font-size: 12px; font-weight: 700; color: #111827; margin-bottom: 8px; }
+    .city-card-chart { position: relative; height: 160px; }
+
+    /* ═══════════════════════════════════════
+       VISTA 3 — PREVISIÓ 7 DIES
+    ═══════════════════════════════════════ */
+    .forecast-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 12px; }
+    .fc-card { background: #fff; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,.07), 0 4px 12px rgba(0,0,0,.04); padding: 13px 16px; }
+    .fc-title { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
+    .fc-days  { display: flex; gap: 4px; margin-bottom: 10px; }
+    .fc-day   { flex: 1; text-align: center; border-radius: 5px; padding: 5px 2px; }
+    .fc-day .fd { font-size: 11px; font-weight: 700; line-height: 1.3; }
+    .fc-day .fr { font-size: 9px; line-height: 1.3; }
+    .fc-day .fn { font-size: 8px; opacity: .7; }
+    .fc-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .fc-stat  { background: #f9fafb; border-radius: 6px; padding: 7px 10px; }
+    .fc-stat .fsl { font-size: 10px; color: #6b7280; margin-bottom: 2px; }
+    .fc-stat .fsv { font-size: 14px; font-weight: 700; color: #111827; }
+    .fc-stat .fsp { font-size: 10px; color: #9ca3af; margin-top: 1px; }
+    .delta-up   { color: #dc2626; }
+    .delta-down { color: #16a34a; }
+    .delta-eq   { color: #9ca3af; }
+
+    /* ═══════════════════════════════════════
+       VISTA 4 — HISTORIAL 18 MESOS
+    ═══════════════════════════════════════ */
+    .hist-card { background: #fff; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,.07), 0 4px 12px rgba(0,0,0,.04); padding: 20px 22px; }
+    .hist-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+    .hist-title { font-size: 16px; font-weight: 700; }
+    .hist-sub   { font-size: 11px; color: #6b7280; margin-top: 2px; }
+    .hist-summary { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px,1fr)); gap: 10px; margin-bottom: 22px; }
+    .hs-item { background: #f9fafb; border-radius: 8px; padding: 10px 12px; }
+    .hs-item .hsl { font-size: 10px; color: #6b7280; margin-bottom: 3px; }
+    .hs-item .hsv { font-size: 16px; font-weight: 700; }
+    .hs-item .hsm { font-size: 10px; color: #9ca3af; margin-top: 2px; }
+    .hist-chart-wrap { position: relative; height: 280px; margin-bottom: 22px; }
+    .hist-chart-title { font-size: 12px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: .4px; margin-bottom: 8px; }
+
+    .hist-loading { text-align: center; padding: 60px; color: #6b7280; }
+    .hist-empty   { text-align: center; padding: 60px; color: #9ca3af; font-size: 14px; }
+
+    /* ── DETAIL PANEL ─── */
+    .detail-panel { background: #fff; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,.07), 0 4px 12px rgba(0,0,0,.04); padding: 20px 22px; margin-top: 14px; display: none; }
+    .detail-panel.open { display: block; }
+    .dh { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
+    .dh h2 { font-size: 18px; font-weight: 700; }
+    .dh .dsub { font-size: 11px; color: #6b7280; margin-top: 3px; }
+    .close-btn { background: none; border: none; font-size: 22px; color: #9ca3af; cursor: pointer; line-height: 1; }
+    .close-btn:hover { color: #374151; }
+    .dcgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    @media (max-width: 820px) { .dcgrid { grid-template-columns: 1fr; } }
+    .dctitle { font-size: 11px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: .4px; margin-bottom: 5px; }
+    .badge { display: inline-block; padding: 1px 7px; border-radius: 10px; font-size: 10px; margin-left: 5px; }
+    .b26 { background: #dbeafe; color: #1d4ed8; }
+    .b25 { background: #fff7ed; color: #ea580c; }
+    .dcwrap { position: relative; height: 190px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>🌦 Cooltra Meteo</h1>
+    <div class="header-meta">18 ciutats · Open Meteo</div>
+  </div>
+  <div class="hdr-right">
+    <span id="lastFetch"></span>
+    <button class="btn-dark" id="btnRefresh" onclick="doRefresh()">↻ Actualitza</button>
+  </div>
+</header>
+
+<!-- TABS -->
+<nav class="tabs">
+  <button class="tab-btn active" data-view="table"    onclick="setView('table')">   📋 Taula comparativa</button>
+  <button class="tab-btn"        data-view="charts"   onclick="setView('charts')">  📈 Gràfics per ciutat</button>
+  <button class="tab-btn"        data-view="forecast" onclick="setView('forecast')">🔮 Previsió 7 dies</button>
+  <button class="tab-btn"        data-view="history"  onclick="setView('history')"> 📅 Historial 18 mesos</button>
+</nav>
+
+<!-- SUB-CONTROLS: canvien per vista -->
+<div id="scTable" class="sub-controls">
+  <div class="toggle-group">
+    <button class="pill on-2026" disabled title="Sempre visible">2026</button>
+    <button class="pill on-2025" id="tog2025" onclick="toggleYear(2025)">2025</button>
+    <button class="pill"         id="tog2024" onclick="toggleYear(2024)">+ 2024</button>
+  </div>
+  <div class="sc-sep"></div>
+  <button class="pill" id="togHidePast" onclick="toggleHidePast()">Ocultar passat</button>
+</div>
+
+<div id="scCharts" class="sub-controls hidden">
+  <div class="toggle-group">
+    <button class="pill on-2026" disabled title="Sempre visible">2026</button>
+    <button class="pill on-2025" id="togC2025" onclick="toggleChartYear(2025)">2025</button>
+  </div>
+  <div class="sc-sep"></div>
+  <div class="chart-legend">
+    <div class="cl-item"><div class="cl-bar" style="background:#3b82f6;"></div> Pluja 2026</div>
+    <div class="cl-item" id="clBar25"><div class="cl-bar" style="background:#d1d5db;"></div> Pluja 2025</div>
+    <div class="cl-item"><div class="cl-line" style="background:#ef4444; height:2.5px;"></div> Tmax 2026</div>
+    <div class="cl-item" id="clLine25"><div class="cl-line dashed" style="color:#f97316; height:2px;"></div> Tmax 2025</div>
+  </div>
+</div>
+
+<div id="scForecast" class="sub-controls hidden">
+  <!-- Previsió no té controls addicionals -->
+  <span style="font-size:11px;color:#9ca3af;">Ordenat per pluja prevista (7 dies). 2026 vs 2025.</span>
+</div>
+
+<div id="scHistory" class="sub-controls hidden">
+  <div class="city-select-wrap">
+    <label for="citySelector">Ciutat:</label>
+    <select id="citySelector"></select>
+    <button class="btn-dark" onclick="loadHistory()">Carrega</button>
+  </div>
+  <span id="histStatus" style="font-size:11px;color:#9ca3af;"></span>
+</div>
+
+<div class="main">
+  <div id="loadWrap" class="loading-wrap"><span class="spin"></span>Connectant al servidor local...</div>
+  <div id="errBox" class="error-box" style="display:none;"></div>
+  <div id="viewContainer"></div>
+
+  <!-- Detail panel (per taula i gràfics) -->
+  <div id="detailPanel" class="detail-panel">
+    <div class="dh">
+      <div><h2 id="dCity">—</h2><div class="dsub" id="dSub"></div></div>
+      <button class="close-btn" onclick="closeDetail()">✕</button>
+    </div>
+    <div class="dcgrid">
+      <div><div class="dctitle">Temperatura °C <span class="badge b26">2026</span></div><div class="dcwrap"><canvas id="dcT26"></canvas></div></div>
+      <div><div class="dctitle">Pluja mm <span class="badge b26">2026</span></div><div class="dcwrap"><canvas id="dcR26"></canvas></div></div>
+      <div><div class="dctitle">Temperatura °C <span class="badge b25">2025</span></div><div class="dcwrap"><canvas id="dcT25"></canvas></div></div>
+      <div><div class="dctitle">Pluja mm <span class="badge b25">2025</span></div><div class="dcwrap"><canvas id="dcR25"></canvas></div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = 'http://localhost:8000/api/weather';
+const API_HIST = 'http://localhost:8000/api/history';
+
+const FLAGS  = { ES:'🇪🇸', PT:'🇵🇹', FR:'🇫🇷', IT:'🇮🇹', NL:'🇳🇱', BE:'🇧🇪' };
+const CNAMES = { ES:'Espanya', PT:'Portugal', FR:'França', IT:'Itàlia', NL:'Països Baixos', BE:'Bèlgica' };
+const CORD   = ['ES','PT','FR','IT','NL','BE'];
+const MONTHS_CAT = ['gen','feb','mar','abr','mai','jun','jul','ago','set','oct','nov','des'];
+const MONTHS_FULL = ['Gener','Febrer','Març','Abril','Maig','Juny','Juliol','Agost','Setembre','Octubre','Novembre','Desembre'];
+const WDAYS  = ['Dg','Dl','Dm','Dc','Dj','Dv','Ds'];
+
+let WX            = null;
+let currentView   = 'table';
+const viewCharts  = {};
+const detailCharts = {};
+
+// ── State toggles ───────────────────────────────────────────────────────────
+const state = {
+  show2025:    true,
+  show2024:    false,
+  hidePast:    false,
+  chartShow25: true,
+};
+
+// ── Date utils ──────────────────────────────────────────────────────────────
+function addDays(str, n) {
+  const d = new Date(str + 'T12:00:00Z');
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().split('T')[0];
+}
+function shiftYear(str, delta) {
+  return str.replace(/^(\d{4})/, y => String(+y + delta));
+}
+function genRange(start, end) {
+  const out = []; let c = start;
+  while (c <= end) { out.push(c); c = addDays(c, 1); }
+  return out;
+}
+function fmtHdr(str) {
+  const d = new Date(str + 'T12:00:00Z');
+  return `${WDAYS[d.getUTCDay()]}<br>${d.getUTCDate()} ${MONTHS_CAT[d.getUTCMonth()]}`;
+}
+function fmtShort(str) {
+  const d = new Date(str + 'T12:00:00Z');
+  return `${d.getUTCDate()}/${d.getUTCMonth()+1}`;
+}
+function fmtDayName(str) {
+  const d = new Date(str + 'T12:00:00Z');
+  return WDAYS[d.getUTCDay()];
+}
+function fmtMonthLabel(ym) {  // "2024-10"
+  const [y, m] = ym.split('-').map(Number);
+  return `${MONTHS_FULL[m-1].substring(0,3)} ${y}`;
+}
+
+// ── Colors ──────────────────────────────────────────────────────────────────
+function rainBg(mm) {
+  if (!mm || mm < 0.1) return '#f9fafb';
+  if (mm < 1)  return '#eff6ff';
+  if (mm < 3)  return '#bfdbfe';
+  if (mm < 8)  return '#60a5fa';
+  if (mm < 20) return '#1d4ed8';
+  return '#1e1b4b';
+}
+function rainFg(mm)   { return (!mm || mm < 3) ? '#1f2937' : '#fff'; }
+function rainBarClr(mm) {
+  if (!mm || mm < 1) return '#bfdbfe';
+  if (mm < 8)        return '#60a5fa';
+  return '#1d4ed8';
+}
+function tempColor(t) {
+  if (t == null) return '#9ca3af';
+  if (t < 5)  return '#1d4ed8';
+  if (t < 12) return '#0891b2';
+  if (t < 20) return '#16a34a';
+  if (t < 28) return '#d97706';
+  return '#dc2626';
+}
+
+// ── Data access ─────────────────────────────────────────────────────────────
+function getDay(cityName, dateStr, yearOffset) {
+  // yearOffset: 0=2026, -1=2025, -2=2024
+  if (!WX?.data[cityName]) return null;
+  const rec = WX.data[cityName];
+  const src = yearOffset === 0 ? rec.cur : yearOffset === -1 ? rec.ly : rec.ly2;
+  if (!src?.daily) return null;
+  const dt  = yearOffset === 0 ? dateStr : shiftYear(dateStr, yearOffset);
+  const idx = src.daily.time.indexOf(dt);
+  if (idx < 0) return null;
+  return {
+    rain: src.daily.precipitation_sum?.[idx]   ?? null,
+    tmax: src.daily.temperature_2m_max?.[idx]  ?? null,
+    tmin: src.daily.temperature_2m_min?.[idx]  ?? null,
+  };
+}
+function seriesOf(cityName, dates, key, yearOffset) {
+  return dates.map(dt => {
+    const d = getDay(cityName, dt, yearOffset);
+    return d ? d[key] : null;
+  });
+}
+
+// ── Fetch main data ──────────────────────────────────────────────────────────
+async function loadData(force = false) {
+  document.getElementById('loadWrap').style.display = 'block';
+  document.getElementById('errBox').style.display   = 'none';
+  document.getElementById('viewContainer').innerHTML = '';
+  const btn = document.getElementById('btnRefresh');
+  btn.disabled = true;
+
+  try {
+    const r = await fetch(force ? API + '?refresh=1' : API);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    WX = await r.json();
+    if (WX.error) throw new Error(WX.error);
+    document.getElementById('lastFetch').textContent = `${WX.fetched_at}`;
+    document.getElementById('loadWrap').style.display = 'none';
+
+    // Populate city selector for history view
+    fillCitySelector();
+    renderCurrentView();
+  } catch(e) {
+    document.getElementById('loadWrap').style.display = 'none';
+    const eb = document.getElementById('errBox');
+    eb.style.display = 'block';
+    eb.innerHTML = `<strong>No s'ha pogut connectar al servidor local.</strong><br>
+      Error: <code>${e.message}</code><br><br>
+      Assegura't que el servidor està engegat al terminal:<br>
+      <code>python3 server.py</code>`;
+  }
+  btn.disabled = false;
+}
+
+function doRefresh() { closeDetail(); clearViewCharts(); loadData(true); }
+
+function fillCitySelector() {
+  if (!WX) return;
+  const sel = document.getElementById('citySelector');
+  sel.innerHTML = WX.cities.map(c => `<option value="${c.name}">${FLAGS[c.country]} ${c.name}</option>`).join('');
+}
+
+// ── View management ──────────────────────────────────────────────────────────
+const SC_MAP = { table:'scTable', charts:'scCharts', forecast:'scForecast', history:'scHistory' };
+
+function clearViewCharts() {
+  for (const k in viewCharts) { try { viewCharts[k].destroy(); } catch(e){} delete viewCharts[k]; }
+}
+function setView(v) {
+  currentView = v;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.view === v));
+  Object.entries(SC_MAP).forEach(([key, id]) => {
+    document.getElementById(id).classList.toggle('hidden', key !== v);
+  });
+  clearViewCharts();
+  closeDetail();
+  renderCurrentView();
+}
+function renderCurrentView() {
+  if (!WX) return;
+  const c = document.getElementById('viewContainer');
+  if (currentView === 'table')    renderTable(c);
+  if (currentView === 'charts')   renderCharts(c);
+  if (currentView === 'forecast') renderForecast(c);
+  if (currentView === 'history')  renderHistoryEmpty(c);
+}
+
+// ── Toggle handlers ──────────────────────────────────────────────────────────
+function toggleYear(yr) {
+  if (yr === 2025) {
+    state.show2025 = !state.show2025;
+    document.getElementById('tog2025').className = 'pill' + (state.show2025 ? ' on-2025' : '');
+    document.getElementById('tog2025').textContent = state.show2025 ? '2025' : '+ 2025';
+  }
+  if (yr === 2024) {
+    state.show2024 = !state.show2024;
+    document.getElementById('tog2024').className = 'pill' + (state.show2024 ? ' on-2024' : '');
+    document.getElementById('tog2024').textContent = state.show2024 ? '2024' : '+ 2024';
+  }
+  if (currentView === 'table') { clearViewCharts(); renderCurrentView(); }
+}
+
+function toggleHidePast() {
+  state.hidePast = !state.hidePast;
+  const btn = document.getElementById('togHidePast');
+  btn.className = 'pill' + (state.hidePast ? ' on-hide' : '');
+  btn.textContent = state.hidePast ? 'Mostrar passat' : 'Ocultar passat';
+  if (currentView === 'table') { clearViewCharts(); renderCurrentView(); }
+}
+
+function toggleChartYear(yr) {
+  if (yr === 2025) {
+    state.chartShow25 = !state.chartShow25;
+    document.getElementById('togC2025').className = 'pill' + (state.chartShow25 ? ' on-2025' : '');
+    document.getElementById('togC2025').textContent = state.chartShow25 ? '2025' : '+ 2025';
+    // Show/hide legend items
+    ['clBar25','clLine25'].forEach(id => {
+      document.getElementById(id).style.opacity = state.chartShow25 ? '1' : '0.3';
+    });
+    if (currentView === 'charts') { clearViewCharts(); renderCurrentView(); }
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// VISTA 1 — TAULA COMPARATIVA
+// ══════════════════════════════════════════════════════════════════════════
+function renderTable(container) {
+  const today    = WX.today;
+  let datesCur   = genRange(WX.dates.start_cur, WX.dates.end_cur);
+  if (state.hidePast) datesCur = datesCur.filter(d => d >= today);
+
+  // Columnes = dies 2026 (24 dies). Files per any: 2026 + ↳ 2025 + ↳ 2024 (opcionals).
+  const totalCols = 1 + datesCur.length;
+
+  // Capçalera: dates 2026
+  let h = `<div class="card"><div class="tscroll"><table><thead><tr>`;
+  h += `<th class="col-city" style="background:#111827;color:#fff;">Ciutat</th>`;
+  for (const dt of datesCur) {
+    const cls = dt < today ? 'hd-past' : dt === today ? 'hd-today' : 'hd-future';
+    const dot = dt === today ? '<br>●' : '';
+    h += `<th class="col-date ${cls}">${fmtHdr(dt)}${dot}</th>`;
+  }
+  h += `</tr></thead><tbody>`;
+
+  for (const country of CORD) {
+    const cc = WX.cities.filter(c => c.country === country);
+    if (!cc.length) continue;
+    h += `<tr class="group-row"><td colspan="${totalCols}">${FLAGS[country]} ${CNAMES[country]}</td></tr>`;
+    for (const city of cc) {
+      // Fila principal: 2026
+      h += `<tr>`;
+      h += `<td class="col-city" onclick="showDetail('${city.name}')" title="Veure gràfics">${city.name}</td>`;
+      for (const dt of datesCur) h += dataCellHTML(city.name, dt, 0, dt === today);
+      h += `</tr>`;
+
+      // Sub-fila ↳ 2025
+      if (state.show2025) {
+        h += `<tr class="subrow-2025"><td class="col-city">↳ 2025</td>`;
+        for (const dt of datesCur) h += dataCellHTML(city.name, dt, -1, false);
+        h += `</tr>`;
+      }
+
+      // Sub-fila ↳ 2024
+      if (state.show2024) {
+        h += `<tr class="subrow-2024"><td class="col-city">↳ 2024</td>`;
+        for (const dt of datesCur) h += dataCellHTML(city.name, dt, -2, false);
+        h += `</tr>`;
+      }
+    }
+  }
+  h += `</tbody></table></div></div>`;
+  container.innerHTML = h;
+}
+
+function dataCellHTML(cityName, dt, yearOffset, isToday) {
+  const d = getDay(cityName, dt, yearOffset);
+  if (!d) return `<td class="dcell${isToday?' today-cell':''}"><span class="nodata">—</span></td>`;
+  const bg  = rainBg(d.rain);
+  const fg  = rainFg(d.rain);
+  const tc  = tempColor(d.tmax);
+  const rS  = d.rain != null ? (d.rain < 0.1 ? '0' : d.rain.toFixed(1)) : '—';
+  const tS  = d.tmax != null ? Math.round(d.tmax) + '°' : '—';
+  const tip = `Màx:${d.tmax!=null?d.tmax.toFixed(1):'—'}° Mín:${d.tmin!=null?d.tmin.toFixed(1):'—'}° Pluja:${rS}mm`;
+  return `<td class="dcell${isToday?' today-cell':''}" style="background:${bg};color:${fg};" data-tip="${tip}">
+    <div class="t" style="color:${tc};">${tS}</div><div class="r">${rS}mm</div>
+  </td>`;
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// VISTA 2 — GRÀFICS PER CIUTAT
+// ══════════════════════════════════════════════════════════════════════════
+function renderCharts(container) {
+  const datesCur = genRange(WX.dates.start_cur, WX.dates.end_cur);
+  const labels   = datesCur.map(fmtShort);
+  const todayIdx = datesCur.indexOf(WX.today);
+
+  let h = '<div class="charts-grid">';
+  for (const city of WX.cities) {
+    const id = 'cc_' + city.name.replace(/\s/g,'_');
+    h += `<div class="city-card">
+      <div class="city-card-title">${FLAGS[city.country]} ${city.name}</div>
+      <div class="city-card-chart"><canvas id="${id}"></canvas></div>
+    </div>`;
+  }
+  h += '</div>';
+  container.innerHTML = h;
+
+  for (const city of WX.cities) {
+    const id     = 'cc_' + city.name.replace(/\s/g,'_');
+    const rain26 = seriesOf(city.name, datesCur, 'rain', 0);
+    const tmax26 = seriesOf(city.name, datesCur, 'tmax', 0);
+    const rain25 = state.chartShow25 ? seriesOf(city.name, datesCur, 'rain', -1) : null;
+    const tmax25 = state.chartShow25 ? seriesOf(city.name, datesCur, 'tmax', -1) : null;
+
+    // Mark today bar with a stronger color
+    const barClr26 = rain26.map((v,i) => i === todayIdx ? '#1d4ed8' : rainBarClr(v));
+
+    const datasets = [
+      { type:'bar',  label:'Pluja 2026', data:rain26, backgroundColor:barClr26, yAxisID:'yR', order:3, borderRadius:2 },
+      ...(rain25 ? [{ type:'bar', label:'Pluja 2025', data:rain25, backgroundColor:'rgba(156,163,175,.5)', yAxisID:'yR', order:4, borderRadius:2 }] : []),
+      { type:'line', label:'Tmax 2026', data:tmax26, borderColor:'#ef4444', backgroundColor:'transparent', tension:.35, pointRadius:1.5, borderWidth:2, yAxisID:'yT', order:1 },
+      ...(tmax25 ? [{ type:'line', label:'Tmax 2025', data:tmax25, borderColor:'#f97316', backgroundColor:'transparent', tension:.35, pointRadius:1, borderWidth:1.5, borderDash:[4,3], yAxisID:'yT', order:2 }] : []),
+    ];
+
+    viewCharts[id] = new Chart(document.getElementById(id), {
+      type: 'bar',
+      data: { labels, datasets },
+      options: {
+        responsive:true, maintainAspectRatio:false,
+        interaction:{ mode:'index', intersect:false },
+        scales: {
+          x:  { ticks:{ font:{size:8}, maxRotation:55, autoSkip:true, maxTicksLimit:8 } },
+          yT: { type:'linear', position:'left',  ticks:{ font:{size:8} }, title:{ display:true, text:'°C', font:{size:8} }, grid:{ color:'#f3f4f6' } },
+          yR: { type:'linear', position:'right', ticks:{ font:{size:8} }, title:{ display:true, text:'mm', font:{size:8} }, grid:{ drawOnChartArea:false }, min:0 },
+        },
+        plugins: {
+          legend: { display:false },
+          tooltip: { callbacks: { label: ctx => {
+            if (ctx.raw == null) return null;
+            const u = ctx.dataset.yAxisID === 'yR' ? 'mm' : '°C';
+            return `${ctx.dataset.label}: ${(+ctx.raw).toFixed(1)}${u}`;
+          }}}
+        }
+      }
+    });
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// VISTA 3 — PREVISIÓ 7 DIES
+// ══════════════════════════════════════════════════════════════════════════
+function renderForecast(container) {
+  const today       = WX.today;
+  const futureDates = genRange(today, addDays(today, 6));
+
+  const cityStats = WX.cities.map(city => {
+    let r26=0, r25=0, ts26=0, ts25=0, tc=0;
+    futureDates.forEach(dt => {
+      const d26 = getDay(city.name, dt, 0);
+      const d25 = getDay(city.name, dt, -1);
+      if (d26?.rain != null) r26 += d26.rain;
+      if (d25?.rain != null) r25 += d25.rain;
+      if (d26?.tmax != null) { ts26 += d26.tmax; tc++; }
+      if (d25?.tmax != null) ts25 += d25.tmax;
+    });
+    return { city, r26, r25, avgT26: tc ? ts26/tc : null, avgT25: tc ? ts25/tc : null };
+  }).sort((a,b) => b.r26 - a.r26);
+
+  let h = '<div class="forecast-grid">';
+  for (const { city, r26, r25, avgT26, avgT25 } of cityStats) {
+    const delta = r26 - r25;
+    const dCls  = Math.abs(delta) < 2 ? 'delta-eq' : delta > 0 ? 'delta-up' : 'delta-down';
+    const dTxt  = Math.abs(delta) < 2 ? '≈ similar a 2025'
+                : `${delta > 0 ? '▲' : '▼'} ${Math.abs(delta).toFixed(1)}mm vs 2025`;
+    let days = '';
+    for (const dt of futureDates) {
+      const d = getDay(city.name, dt, 0);
+      const r = d?.rain ?? 0;
+      const t = d?.tmax ?? null;
+      days += `<div class="fc-day" style="background:${rainBg(r)};color:${rainFg(r)};">
+        <div class="fd" style="color:${tempColor(t)};">${t!=null?Math.round(t)+'°':'—'}</div>
+        <div class="fr">${r<0.1?'—':r.toFixed(1)+'mm'}</div>
+        <div class="fn">${fmtDayName(dt)}</div>
+      </div>`;
+    }
+    h += `<div class="fc-card">
+      <div class="fc-title">${FLAGS[city.country]} ${city.name}</div>
+      <div class="fc-days">${days}</div>
+      <div class="fc-stats">
+        <div class="fc-stat">
+          <div class="fsl">🌧 Pluja total (7d)</div>
+          <div class="fsv">${r26.toFixed(1)} mm</div>
+          <div class="fsp ${dCls}">${dTxt}</div>
+        </div>
+        <div class="fc-stat">
+          <div class="fsl">🌡 Temp màx mitjana</div>
+          <div class="fsv" style="color:${tempColor(avgT26)}">${avgT26!=null?avgT26.toFixed(1)+'°':'—'}</div>
+          <div class="fsp">2025: ${avgT25!=null?avgT25.toFixed(1)+'°':'—'}</div>
+        </div>
+      </div>
+    </div>`;
+  }
+  h += '</div>';
+  container.innerHTML = h;
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// VISTA 4 — HISTORIAL 18 MESOS
+// ══════════════════════════════════════════════════════════════════════════
+function renderHistoryEmpty(container) {
+  container.innerHTML = `<div class="hist-empty">
+    Selecciona una ciutat al menú superior i prem <strong>Carrega</strong>.
+  </div>`;
+}
+
+async function loadHistory() {
+  const cityName = document.getElementById('citySelector').value;
+  if (!cityName) return;
+  const container = document.getElementById('viewContainer');
+  const statusEl  = document.getElementById('histStatus');
+
+  // Destroy old charts
+  ['hRain','hTemp'].forEach(k => { if(viewCharts[k]) { viewCharts[k].destroy(); delete viewCharts[k]; } });
+
+  container.innerHTML = `<div class="hist-loading"><span class="spin"></span>Carregant 18 mesos per ${cityName}...</div>`;
+  statusEl.textContent = '';
+
+  try {
+    const r = await fetch(`${API_HIST}?city=${encodeURIComponent(cityName)}`);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const hist = await r.json();
+    if (hist.error) throw new Error(hist.error);
+    statusEl.textContent = `${hist.start_date} → ${hist.end_date}`;
+    renderHistoryView(container, hist, cityName);
+  } catch(e) {
+    container.innerHTML = `<div class="error-box">Error carregant historial: <code>${e.message}</code></div>`;
+  }
+}
+
+function renderHistoryView(container, hist, cityName) {
+  if (!hist.daily?.time?.length) {
+    container.innerHTML = '<div class="hist-empty">No hi ha dades disponibles.</div>';
+    return;
+  }
+
+  const times    = hist.daily.time;
+  const rainArr  = hist.daily.precipitation_sum   || [];
+  const tmaxArr  = hist.daily.temperature_2m_max  || [];
+  const tminArr  = hist.daily.temperature_2m_min  || [];
+
+  // Aggregate by month
+  const monthly = {};
+  times.forEach((dt, i) => {
+    const ym = dt.substring(0, 7);
+    if (!monthly[ym]) monthly[ym] = { rain:[], tmax:[], tmin:[] };
+    if (rainArr[i] != null) monthly[ym].rain.push(rainArr[i]);
+    if (tmaxArr[i] != null) monthly[ym].tmax.push(tmaxArr[i]);
+    if (tminArr[i] != null) monthly[ym].tmin.push(tminArr[i]);
+  });
+
+  const labels     = Object.keys(monthly).sort();
+  const monthRain  = labels.map(k => monthly[k].rain.reduce((a,b)=>a+b,0));
+  const monthTmax  = labels.map(k => monthly[k].tmax.length ? monthly[k].tmax.reduce((a,b)=>a+b,0)/monthly[k].tmax.length : null);
+  const monthTmin  = labels.map(k => monthly[k].tmin.length ? monthly[k].tmin.reduce((a,b)=>a+b,0)/monthly[k].tmin.length : null);
+  const labelsFmt  = labels.map(fmtMonthLabel);
+
+  // Summary stats
+  const totalRain  = monthRain.reduce((a,b)=>a+b,0);
+  const maxRainIdx = monthRain.indexOf(Math.max(...monthRain));
+  const minRainIdx = monthRain.indexOf(Math.min(...monthRain));
+  const maxTIdx    = monthTmax.reduce((mi,v,i,a) => v!=null && (a[mi]==null||v>a[mi]) ? i : mi, 0);
+  const minTIdx    = monthTmin.reduce((mi,v,i,a) => v!=null && (a[mi]==null||v<a[mi]) ? i : mi, 0);
+
+  container.innerHTML = `
+    <div class="hist-card">
+      <div class="hist-header">
+        <div>
+          <div class="hist-title">${FLAGS[WX?.cities.find(c=>c.name===cityName)?.country||''] || ''} ${cityName} — Historial 18 mesos</div>
+          <div class="hist-sub">${hist.start_date} → ${hist.end_date} · Dades diàries agrupades per mes</div>
+        </div>
+      </div>
+      <div class="hist-summary">
+        <div class="hs-item"><div class="hsl">🌧 Pluja total</div><div class="hsv">${totalRain.toFixed(0)} mm</div><div class="hsm">18 mesos</div></div>
+        <div class="hs-item"><div class="hsl">☔ Mes més plujós</div><div class="hsv" style="color:#1d4ed8">${monthRain[maxRainIdx].toFixed(0)} mm</div><div class="hsm">${labelsFmt[maxRainIdx]}</div></div>
+        <div class="hs-item"><div class="hsl">🌞 Mes més sec</div><div class="hsv" style="color:#f59e0b">${monthRain[minRainIdx].toFixed(0)} mm</div><div class="hsm">${labelsFmt[minRainIdx]}</div></div>
+        <div class="hs-item"><div class="hsl">🔥 Mes més calorós</div><div class="hsv" style="color:${tempColor(monthTmax[maxTIdx])}">${monthTmax[maxTIdx]?.toFixed(1)||'—'}°</div><div class="hsm">${labelsFmt[maxTIdx]}</div></div>
+        <div class="hs-item"><div class="hsl">🥶 Mes més fred</div><div class="hsv" style="color:${tempColor(monthTmin[minTIdx])}">${monthTmin[minTIdx]?.toFixed(1)||'—'}°</div><div class="hsm">${labelsFmt[minTIdx]}</div></div>
+      </div>
+
+      <div class="hist-chart-title">Pluja mensual (mm)</div>
+      <div class="hist-chart-wrap"><canvas id="hRain"></canvas></div>
+
+      <div class="hist-chart-title" style="margin-top:22px;">Temperatura mensual mitjana (°C)</div>
+      <div class="hist-chart-wrap"><canvas id="hTemp"></canvas></div>
+    </div>`;
+
+  // Rain chart
+  viewCharts['hRain'] = new Chart(document.getElementById('hRain'), {
+    type: 'bar',
+    data: {
+      labels: labelsFmt,
+      datasets: [{
+        label: 'Pluja total mensual (mm)',
+        data: monthRain,
+        backgroundColor: monthRain.map(v => v > 80 ? '#1e1b4b' : v > 50 ? '#1d4ed8' : v > 20 ? '#60a5fa' : v > 5 ? '#bfdbfe' : '#e0f2fe'),
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: {
+        x: { ticks: { font:{size:10} } },
+        y: { min:0, ticks:{ font:{size:10} }, title:{ display:true, text:'mm', font:{size:11} }, grid:{ color:'#f3f4f6' } }
+      },
+      plugins: { legend:{ display:false }, tooltip:{ callbacks:{ label: ctx => `${ctx.raw.toFixed(1)} mm` } } }
+    }
+  });
+
+  // Temp chart
+  viewCharts['hTemp'] = new Chart(document.getElementById('hTemp'), {
+    type: 'line',
+    data: {
+      labels: labelsFmt,
+      datasets: [
+        { label:'Tmax mitjana', data:monthTmax, borderColor:'#ef4444', backgroundColor:'rgba(239,68,68,.1)', tension:.35, pointRadius:3, fill:false },
+        { label:'Tmin mitjana', data:monthTmin, borderColor:'#3b82f6', backgroundColor:'rgba(59,130,246,.1)', tension:.35, pointRadius:3, fill:'-1' },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode:'index', intersect:false },
+      scales: {
+        x: { ticks:{ font:{size:10} } },
+        y: { ticks:{ font:{size:10} }, title:{ display:true, text:'°C', font:{size:11} }, grid:{ color:'#f3f4f6' } }
+      },
+      plugins: { legend:{ labels:{ font:{size:11}, boxWidth:14 } }, tooltip:{ callbacks:{ label: ctx => `${ctx.dataset.label}: ${ctx.raw?.toFixed(1)||'—'}°C` } } }
+    }
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// PANEL DETALL
+// ══════════════════════════════════════════════════════════════════════════
+function closeDetail() {
+  document.getElementById('detailPanel').classList.remove('open');
+  for (const k in detailCharts) { try { detailCharts[k].destroy(); } catch(e){} delete detailCharts[k]; }
+}
+
+function showDetail(cityName) {
+  if (!WX) return;
+  document.getElementById('dCity').textContent = cityName;
+  document.getElementById('dSub').textContent  =
+    `${WX.dates.start_cur} → ${WX.dates.end_cur}  |  Any passat: ${WX.dates.start_ly} → ${WX.dates.end_ly}`;
+  closeDetail();
+  const panel = document.getElementById('detailPanel');
+  panel.classList.add('open');
+  panel.scrollIntoView({ behavior:'smooth', block:'nearest' });
+
+  const datesCur = genRange(WX.dates.start_cur, WX.dates.end_cur);
+  const datesLY  = genRange(WX.dates.start_ly,  WX.dates.end_ly);
+  const lbl26    = datesCur.map(fmtShort);
+  const lbl25    = datesLY.map(fmtShort);
+  const tIdx     = datesCur.indexOf(WX.today);
+  const pR       = datesCur.map((_,i) => i===tIdx ? 5 : 2);
+
+  const lineOpts = { responsive:true, maintainAspectRatio:false, interaction:{mode:'index',intersect:false},
+    scales:{ x:{ticks:{font:{size:9},maxRotation:50}}, y:{ticks:{font:{size:10}},title:{display:true,text:'°C',font:{size:10}}} },
+    plugins:{legend:{labels:{font:{size:10},boxWidth:12,padding:8}}} };
+  const barOpts  = { responsive:true, maintainAspectRatio:false,
+    scales:{ x:{ticks:{font:{size:9},maxRotation:50}}, y:{min:0,ticks:{font:{size:10}},title:{display:true,text:'mm',font:{size:10}}} },
+    plugins:{legend:{display:false}} };
+
+  detailCharts['cT26'] = new Chart(document.getElementById('dcT26'), { type:'line', data:{ labels:lbl26, datasets:[
+    {label:'Màx', data:seriesOf(cityName,datesCur,'tmax',0),  borderColor:'#ef4444', backgroundColor:'rgba(239,68,68,.08)', tension:.35, pointRadius:pR, fill:false},
+    {label:'Mín', data:seriesOf(cityName,datesCur,'tmin',0), borderColor:'#3b82f6', backgroundColor:'rgba(59,130,246,.08)', tension:.35, pointRadius:pR, fill:'-1'},
+  ]}, options:lineOpts });
+
+  detailCharts['cR26'] = new Chart(document.getElementById('dcR26'), { type:'bar', data:{ labels:lbl26,
+    datasets:[{label:'Pluja mm', data:seriesOf(cityName,datesCur,'rain',0), backgroundColor:seriesOf(cityName,datesCur,'rain',0).map(rainBarClr), borderRadius:3}]
+  }, options:barOpts });
+
+  detailCharts['cT25'] = new Chart(document.getElementById('dcT25'), { type:'line', data:{ labels:lbl25, datasets:[
+    {label:'Màx', data:seriesOf(cityName,datesCur,'tmax',-1), borderColor:'#ef4444', backgroundColor:'rgba(239,68,68,.08)', tension:.35, pointRadius:2, fill:false},
+    {label:'Mín', data:seriesOf(cityName,datesCur,'tmin',-1), borderColor:'#3b82f6', backgroundColor:'rgba(59,130,246,.08)', tension:.35, pointRadius:2, fill:'-1'},
+  ]}, options:lineOpts });
+
+  detailCharts['cR25'] = new Chart(document.getElementById('dcR25'), { type:'bar', data:{ labels:lbl25,
+    datasets:[{label:'Pluja mm', data:seriesOf(cityName,datesCur,'rain',-1), backgroundColor:seriesOf(cityName,datesCur,'rain',-1).map(rainBarClr), borderRadius:3}]
+  }, options:barOpts });
+}
+
+// ── Init ────────────────────────────────────────────────────────────────────
+loadData();
+</script>
+</body>
+</html>
