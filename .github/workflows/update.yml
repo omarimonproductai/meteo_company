@@ -5,6 +5,9 @@ on:
     - cron: '0 6 * * *'   # cada dia a les 6:00 UTC
   workflow_dispatch:        # permet executar-lo manualment des de GitHub
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   update:
     runs-on: ubuntu-latest
