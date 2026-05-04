@@ -1,0 +1,31 @@
+name: Actualitzar dades meteorològiques
+
+on:
+  schedule:
+    - cron: '0 6 * * *'   # cada dia a les 6:00 UTC
+  workflow_dispatch:        # permet executar-lo manualment des de GitHub
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write       # necessari per fer push
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Descarregar dades Open-Meteo
+        run: python fetch_weather.py
+
+      - name: Commit i push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add weather_latest.json
+          git diff --cached --quiet || git commit -m "🤖 Dades meteo actualitzades $(date -u +'%Y-%m-%d %H:%M UTC')"
+          git push
