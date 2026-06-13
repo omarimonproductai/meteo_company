@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ca">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -71,13 +71,13 @@
     .card { background: #fff; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,.07), 0 4px 12px rgba(0,0,0,.04); overflow: hidden; }
 
     /* ═══════════════════════════════════════
-       VISTA 1 — TAULA COMPARATIVA
+       VIEW 1 — COMPARISON TABLE
     ═══════════════════════════════════════ */
     .tscroll { overflow: auto; }
     table   { border-collapse: separate; border-spacing: 0; width: max-content; min-width: 100%; }
     th, td  { padding: 0; border-right: 1px solid #f3f4f6; border-bottom: 1px solid #f3f4f6; }
 
-    /* Sticky header (fixa en fer scroll vertical) */
+    /* Sticky header (stays fixed on vertical scroll) */
     thead th { position: sticky; top: 0; z-index: 4; background: #fff; }
     thead th.col-city { z-index: 6; }
     thead .hd-past   { background: #f9fafb !important; }
@@ -116,7 +116,7 @@
     [data-tip]:hover::after { content: attr(data-tip); position: absolute; bottom: calc(100% + 5px); left: 50%; transform: translateX(-50%); background: rgba(17,24,39,.92); color: #fff; padding: 4px 9px; border-radius: 5px; font-size: 10px; white-space: nowrap; z-index: 500; pointer-events: none; }
 
     /* ═══════════════════════════════════════
-       VISTA 2 — GRÀFICS PER CIUTAT
+       VIEW 2 — CHARTS BY CITY
     ═══════════════════════════════════════ */
     .charts-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; }
     @media (max-width: 1100px) { .charts-grid { grid-template-columns: repeat(2,1fr); } }
@@ -127,7 +127,7 @@
     .city-card-chart { position: relative; height: 160px; }
 
     /* ═══════════════════════════════════════
-       VISTA 3 — PREVISIÓ 7 DIES
+       VIEW 3 — 7-DAY FORECAST
     ═══════════════════════════════════════ */
     .forecast-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 12px; }
     .fc-card { background: #fff; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,.07), 0 4px 12px rgba(0,0,0,.04); padding: 13px 16px; }
@@ -147,7 +147,7 @@
     .delta-eq   { color: #9ca3af; }
 
     /* ═══════════════════════════════════════
-       VISTA 4 — HISTORIAL 18 MESOS
+       VIEW 4 — 18-MONTH HISTORY
     ═══════════════════════════════════════ */
     .hist-card { background: #fff; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,.07), 0 4px 12px rgba(0,0,0,.04); padding: 20px 22px; }
     .hist-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
@@ -186,77 +186,77 @@
 <header>
   <div>
     <h1>🌦 Cooltra Meteo</h1>
-    <div class="header-meta">18 ciutats · Open Meteo</div>
+    <div class="header-meta">18 cities · Open Meteo</div>
   </div>
   <div class="hdr-right">
     <span id="lastFetch"></span>
-    <button class="btn-dark" id="btnRefresh" onclick="doRefresh()">↻ Actualitza</button>
+    <button class="btn-dark" id="btnRefresh" onclick="doRefresh()">↻ Refresh</button>
   </div>
 </header>
 
 <!-- TABS -->
 <nav class="tabs">
-  <button class="tab-btn active" data-view="table"    onclick="setView('table')">   📋 Taula comparativa</button>
-  <button class="tab-btn"        data-view="charts"   onclick="setView('charts')">  📈 Gràfics per ciutat</button>
-  <button class="tab-btn"        data-view="forecast" onclick="setView('forecast')">🔮 Previsió 7 dies</button>
-  <button class="tab-btn"        data-view="history"  onclick="setView('history')"> 📅 Historial 18 mesos</button>
+  <button class="tab-btn active" data-view="table"    onclick="setView('table')">   📋 Comparison table</button>
+  <button class="tab-btn"        data-view="charts"   onclick="setView('charts')">  📈 Charts by city</button>
+  <button class="tab-btn"        data-view="forecast" onclick="setView('forecast')">🔮 7-day forecast</button>
+  <button class="tab-btn"        data-view="history"  onclick="setView('history')"> 📅 18-month history</button>
 </nav>
 
-<!-- SUB-CONTROLS: canvien per vista -->
+<!-- SUB-CONTROLS: change per view -->
 <div id="scTable" class="sub-controls">
   <div class="toggle-group">
-    <button class="pill on-2026" disabled title="Sempre visible">2026</button>
+    <button class="pill on-2026" disabled title="Always visible">2026</button>
     <button class="pill on-2025" id="tog2025" onclick="toggleYear(2025)">2025</button>
     <button class="pill"         id="tog2024" onclick="toggleYear(2024)">+ 2024</button>
   </div>
   <div class="sc-sep"></div>
-  <button class="pill" id="togHidePast" onclick="toggleHidePast()">Ocultar passat</button>
+  <button class="pill" id="togHidePast" onclick="toggleHidePast()">Hide past</button>
 </div>
 
 <div id="scCharts" class="sub-controls hidden">
   <div class="toggle-group">
-    <button class="pill on-2026" disabled title="Sempre visible">2026</button>
+    <button class="pill on-2026" disabled title="Always visible">2026</button>
     <button class="pill on-2025" id="togC2025" onclick="toggleChartYear(2025)">2025</button>
   </div>
   <div class="sc-sep"></div>
   <div class="chart-legend">
-    <div class="cl-item"><div class="cl-bar" style="background:#3b82f6;"></div> Pluja 2026</div>
-    <div class="cl-item" id="clBar25"><div class="cl-bar" style="background:#d1d5db;"></div> Pluja 2025</div>
+    <div class="cl-item"><div class="cl-bar" style="background:#3b82f6;"></div> Rain 2026</div>
+    <div class="cl-item" id="clBar25"><div class="cl-bar" style="background:#d1d5db;"></div> Rain 2025</div>
     <div class="cl-item"><div class="cl-line" style="background:#ef4444; height:2.5px;"></div> Tmax 2026</div>
     <div class="cl-item" id="clLine25"><div class="cl-line dashed" style="color:#f97316; height:2px;"></div> Tmax 2025</div>
   </div>
 </div>
 
 <div id="scForecast" class="sub-controls hidden">
-  <!-- Previsió no té controls addicionals -->
-  <span style="font-size:11px;color:#9ca3af;">Ordenat per pluja prevista (7 dies). 2026 vs 2025.</span>
+  <!-- Forecast has no extra controls -->
+  <span style="font-size:11px;color:#9ca3af;">Sorted by forecast rain (7 days). 2026 vs 2025.</span>
 </div>
 
 <div id="scHistory" class="sub-controls hidden">
   <div class="city-select-wrap">
-    <label for="citySelector">Ciutat:</label>
+    <label for="citySelector">City:</label>
     <select id="citySelector"></select>
-    <button class="btn-dark" onclick="loadHistory()">Carrega</button>
+    <button class="btn-dark" onclick="loadHistory()">Load</button>
   </div>
   <span id="histStatus" style="font-size:11px;color:#9ca3af;"></span>
 </div>
 
 <div class="main">
-  <div id="loadWrap" class="loading-wrap"><span class="spin"></span>Carregant dades meteorològiques...</div>
+  <div id="loadWrap" class="loading-wrap"><span class="spin"></span>Loading weather data...</div>
   <div id="errBox" class="error-box" style="display:none;"></div>
   <div id="viewContainer"></div>
 
-  <!-- Detail panel (per taula i gràfics) -->
+  <!-- Detail panel (for table and charts) -->
   <div id="detailPanel" class="detail-panel">
     <div class="dh">
       <div><h2 id="dCity">—</h2><div class="dsub" id="dSub"></div></div>
       <button class="close-btn" onclick="closeDetail()">✕</button>
     </div>
     <div class="dcgrid">
-      <div><div class="dctitle">Temperatura °C <span class="badge b26">2026</span></div><div class="dcwrap"><canvas id="dcT26"></canvas></div></div>
-      <div><div class="dctitle">Pluja mm <span class="badge b26">2026</span></div><div class="dcwrap"><canvas id="dcR26"></canvas></div></div>
-      <div><div class="dctitle">Temperatura °C <span class="badge b25">2025</span></div><div class="dcwrap"><canvas id="dcT25"></canvas></div></div>
-      <div><div class="dctitle">Pluja mm <span class="badge b25">2025</span></div><div class="dcwrap"><canvas id="dcR25"></canvas></div></div>
+      <div><div class="dctitle">Temperature °C <span class="badge b26">2026</span></div><div class="dcwrap"><canvas id="dcT26"></canvas></div></div>
+      <div><div class="dctitle">Rain mm <span class="badge b26">2026</span></div><div class="dcwrap"><canvas id="dcR26"></canvas></div></div>
+      <div><div class="dctitle">Temperature °C <span class="badge b25">2025</span></div><div class="dcwrap"><canvas id="dcT25"></canvas></div></div>
+      <div><div class="dctitle">Rain mm <span class="badge b25">2025</span></div><div class="dcwrap"><canvas id="dcR25"></canvas></div></div>
     </div>
   </div>
 </div>
@@ -266,11 +266,11 @@ const WEATHER_JSON = 'weather_latest.json';
 const ACTIONS_URL  = 'https://github.com/omarimonagentai/meteo_company/actions/workflows/update.yml';
 
 const FLAGS  = { ES:'🇪🇸', PT:'🇵🇹', FR:'🇫🇷', IT:'🇮🇹', NL:'🇳🇱', BE:'🇧🇪' };
-const CNAMES = { ES:'Espanya', PT:'Portugal', FR:'França', IT:'Itàlia', NL:'Països Baixos', BE:'Bèlgica' };
+const CNAMES = { ES:'Spain', PT:'Portugal', FR:'France', IT:'Italy', NL:'Netherlands', BE:'Belgium' };
 const CORD   = ['ES','PT','FR','IT','NL','BE'];
-const MONTHS_CAT = ['gen','feb','mar','abr','mai','jun','jul','ago','set','oct','nov','des'];
-const MONTHS_FULL = ['Gener','Febrer','Març','Abril','Maig','Juny','Juliol','Agost','Setembre','Octubre','Novembre','Desembre'];
-const WDAYS  = ['Dg','Dl','Dm','Dc','Dj','Dv','Ds'];
+const MONTHS_CAT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const MONTHS_FULL = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const WDAYS  = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
 let WX            = null;
 let currentView   = 'table';
@@ -395,8 +395,8 @@ async function loadData() {
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     WX = await r.json();
     if (WX.error) throw new Error(WX.error);
-    if (!WX.fetched_at) throw new Error('Dades no disponibles. Executa el workflow per generar-les per primera vegada.');
-    document.getElementById('lastFetch').textContent = `Actualitzat: ${formatLocalTime(WX.fetched_at)}`;
+    if (!WX.fetched_at) throw new Error('No data available. Run the workflow to generate it for the first time.');
+    document.getElementById('lastFetch').textContent = `Updated: ${formatLocalTime(WX.fetched_at)}`;
     document.getElementById('loadWrap').style.display = 'none';
     fillCitySelector();
     renderCurrentView();
@@ -404,9 +404,9 @@ async function loadData() {
     document.getElementById('loadWrap').style.display = 'none';
     const eb = document.getElementById('errBox');
     eb.style.display = 'block';
-    eb.innerHTML = `<strong>No s'han pogut carregar les dades meteorològiques.</strong><br>
+    eb.innerHTML = `<strong>Could not load the weather data.</strong><br>
       Error: <code>${e.message}</code><br><br>
-      Per generar les dades, executa el <a href="${ACTIONS_URL}" target="_blank" style="color:#60a5fa;">workflow de GitHub Actions</a>.`;
+      To generate the data, run the <a href="${ACTIONS_URL}" target="_blank" style="color:#60a5fa;">GitHub Actions workflow</a>.`;
   }
   btn.disabled = false;
 }
@@ -463,7 +463,7 @@ function toggleHidePast() {
   state.hidePast = !state.hidePast;
   const btn = document.getElementById('togHidePast');
   btn.className = 'pill' + (state.hidePast ? ' on-hide' : '');
-  btn.textContent = state.hidePast ? 'Mostrar passat' : 'Ocultar passat';
+  btn.textContent = state.hidePast ? 'Show past' : 'Hide past';
   if (currentView === 'table') { clearViewCharts(); renderCurrentView(); }
 }
 
@@ -481,19 +481,19 @@ function toggleChartYear(yr) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════
-// VISTA 1 — TAULA COMPARATIVA
+// VIEW 1 — COMPARISON TABLE
 // ══════════════════════════════════════════════════════════════════════════
 function renderTable(container) {
   const today    = WX.today;
   let datesCur   = genRange(WX.dates.start_cur, WX.dates.end_cur);
   if (state.hidePast) datesCur = datesCur.filter(d => d >= today);
 
-  // Columnes = dies 2026 (24 dies). Files per any: 2026 + ↳ 2025 + ↳ 2024 (opcionals).
+  // Columns = 2026 days (24 days). Rows per year: 2026 + ↳ 2025 + ↳ 2024 (optional).
   const totalCols = 1 + datesCur.length;
 
-  // Capçalera: dates 2026
+  // Header: 2026 dates
   let h = `<div class="card"><div class="tscroll"><table><thead><tr>`;
-  h += `<th class="col-city" style="background:#111827;color:#fff;">Ciutat</th>`;
+  h += `<th class="col-city" style="background:#111827;color:#fff;">City</th>`;
   for (const dt of datesCur) {
     const cls = dt < today ? 'hd-past' : dt === today ? 'hd-today' : 'hd-future';
     const dot = dt === today ? '<br>●' : '';
@@ -506,20 +506,20 @@ function renderTable(container) {
     if (!cc.length) continue;
     h += `<tr class="group-row"><td colspan="${totalCols}">${FLAGS[country]} ${CNAMES[country]}</td></tr>`;
     for (const city of cc) {
-      // Fila principal: 2026
+      // Main row: 2026
       h += `<tr>`;
-      h += `<td class="col-city" onclick="showDetail('${city.name}')" title="Veure gràfics">${city.name}</td>`;
+      h += `<td class="col-city" onclick="showDetail('${city.name}')" title="View charts">${city.name}</td>`;
       for (const dt of datesCur) h += dataCellHTML(city.name, dt, 0, dt === today);
       h += `</tr>`;
 
-      // Sub-fila ↳ 2025
+      // Sub-row ↳ 2025
       if (state.show2025) {
         h += `<tr class="subrow-2025"><td class="col-city">↳ 2025</td>`;
         for (const dt of datesCur) h += dataCellHTML(city.name, dt, -1, false);
         h += `</tr>`;
       }
 
-      // Sub-fila ↳ 2024
+      // Sub-row ↳ 2024
       if (state.show2024) {
         h += `<tr class="subrow-2024"><td class="col-city">↳ 2024</td>`;
         for (const dt of datesCur) h += dataCellHTML(city.name, dt, -2, false);
@@ -539,14 +539,14 @@ function dataCellHTML(cityName, dt, yearOffset, isToday) {
   const tc  = tempColor(d.tmax);
   const rS  = d.rain != null ? (d.rain < 0.1 ? '0' : d.rain.toFixed(1)) : '—';
   const tS  = d.tmax != null ? Math.round(d.tmax) + '°' : '—';
-  const tip = `Màx:${d.tmax!=null?d.tmax.toFixed(1):'—'}° Mín:${d.tmin!=null?d.tmin.toFixed(1):'—'}° Pluja:${rS}mm`;
+  const tip = `Max:${d.tmax!=null?d.tmax.toFixed(1):'—'}° Min:${d.tmin!=null?d.tmin.toFixed(1):'—'}° Rain:${rS}mm`;
   return `<td class="dcell${isToday?' today-cell':''}" style="background:${bg};color:${fg};" data-tip="${tip}">
     <div class="t" style="color:${tc};">${tS}</div><div class="r">${rS}mm</div>
   </td>`;
 }
 
 // ══════════════════════════════════════════════════════════════════════════
-// VISTA 2 — GRÀFICS PER CIUTAT
+// VIEW 2 — CHARTS BY CITY
 // ══════════════════════════════════════════════════════════════════════════
 function renderCharts(container) {
   const datesCur = genRange(WX.dates.start_cur, WX.dates.end_cur);
@@ -575,8 +575,8 @@ function renderCharts(container) {
     const barClr26 = rain26.map((v,i) => i === todayIdx ? '#1d4ed8' : rainBarClr(v));
 
     const datasets = [
-      { type:'bar',  label:'Pluja 2026', data:rain26, backgroundColor:barClr26, yAxisID:'yR', order:3, borderRadius:2 },
-      ...(rain25 ? [{ type:'bar', label:'Pluja 2025', data:rain25, backgroundColor:'rgba(156,163,175,.5)', yAxisID:'yR', order:4, borderRadius:2 }] : []),
+      { type:'bar',  label:'Rain 2026', data:rain26, backgroundColor:barClr26, yAxisID:'yR', order:3, borderRadius:2 },
+      ...(rain25 ? [{ type:'bar', label:'Rain 2025', data:rain25, backgroundColor:'rgba(156,163,175,.5)', yAxisID:'yR', order:4, borderRadius:2 }] : []),
       { type:'line', label:'Tmax 2026', data:tmax26, borderColor:'#ef4444', backgroundColor:'transparent', tension:.35, pointRadius:1.5, borderWidth:2, yAxisID:'yT', order:1 },
       ...(tmax25 ? [{ type:'line', label:'Tmax 2025', data:tmax25, borderColor:'#f97316', backgroundColor:'transparent', tension:.35, pointRadius:1, borderWidth:1.5, borderDash:[4,3], yAxisID:'yT', order:2 }] : []),
     ];
@@ -606,7 +606,7 @@ function renderCharts(container) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════
-// VISTA 3 — PREVISIÓ 7 DIES
+// VIEW 3 — 7-DAY FORECAST
 // ══════════════════════════════════════════════════════════════════════════
 function renderForecast(container) {
   const today       = WX.today;
@@ -629,7 +629,7 @@ function renderForecast(container) {
   for (const { city, r26, r25, avgT26, avgT25 } of cityStats) {
     const delta = r26 - r25;
     const dCls  = Math.abs(delta) < 2 ? 'delta-eq' : delta > 0 ? 'delta-up' : 'delta-down';
-    const dTxt  = Math.abs(delta) < 2 ? '≈ similar a 2025'
+    const dTxt  = Math.abs(delta) < 2 ? '≈ similar to 2025'
                 : `${delta > 0 ? '▲' : '▼'} ${Math.abs(delta).toFixed(1)}mm vs 2025`;
     let days = '';
     for (const dt of futureDates) {
@@ -647,12 +647,12 @@ function renderForecast(container) {
       <div class="fc-days">${days}</div>
       <div class="fc-stats">
         <div class="fc-stat">
-          <div class="fsl">🌧 Pluja total (7d)</div>
+          <div class="fsl">🌧 Total rain (7d)</div>
           <div class="fsv">${r26.toFixed(1)} mm</div>
           <div class="fsp ${dCls}">${dTxt}</div>
         </div>
         <div class="fc-stat">
-          <div class="fsl">🌡 Temp màx mitjana</div>
+          <div class="fsl">🌡 Avg max temp</div>
           <div class="fsv" style="color:${tempColor(avgT26)}">${avgT26!=null?avgT26.toFixed(1)+'°':'—'}</div>
           <div class="fsp">2025: ${avgT25!=null?avgT25.toFixed(1)+'°':'—'}</div>
         </div>
@@ -664,11 +664,11 @@ function renderForecast(container) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════
-// VISTA 4 — HISTORIAL 18 MESOS
+// VIEW 4 — 18-MONTH HISTORY
 // ══════════════════════════════════════════════════════════════════════════
 function renderHistoryEmpty(container) {
   container.innerHTML = `<div class="hist-empty">
-    Selecciona una ciutat al menú superior i prem <strong>Carrega</strong>.
+    Select a city from the top menu and press <strong>Load</strong>.
   </div>`;
 }
 
@@ -683,7 +683,7 @@ async function loadHistory() {
   const statusEl  = document.getElementById('histStatus');
 
   ['hRain','hTemp'].forEach(k => { if(viewCharts[k]) { viewCharts[k].destroy(); delete viewCharts[k]; } });
-  container.innerHTML = `<div class="hist-loading"><span class="spin"></span>Carregant 18 mesos per ${cityName}...</div>`;
+  container.innerHTML = `<div class="hist-loading"><span class="spin"></span>Loading 18 months for ${cityName}...</div>`;
   statusEl.textContent = '';
 
   try {
@@ -708,13 +708,13 @@ async function loadHistory() {
     statusEl.textContent = `${startStr} → ${endStr}`;
     renderHistoryView(container, hist, cityName);
   } catch(e) {
-    container.innerHTML = `<div class="error-box">Error carregant historial: <code>${e.message}</code></div>`;
+    container.innerHTML = `<div class="error-box">Error loading history: <code>${e.message}</code></div>`;
   }
 }
 
 function renderHistoryView(container, hist, cityName) {
   if (!hist.daily?.time?.length) {
-    container.innerHTML = '<div class="hist-empty">No hi ha dades disponibles.</div>';
+    container.innerHTML = '<div class="hist-empty">No data available.</div>';
     return;
   }
 
@@ -750,22 +750,22 @@ function renderHistoryView(container, hist, cityName) {
     <div class="hist-card">
       <div class="hist-header">
         <div>
-          <div class="hist-title">${FLAGS[WX?.cities.find(c=>c.name===cityName)?.country||''] || ''} ${cityName} — Historial 18 mesos</div>
-          <div class="hist-sub">${hist.start_date} → ${hist.end_date} · Dades diàries agrupades per mes</div>
+          <div class="hist-title">${FLAGS[WX?.cities.find(c=>c.name===cityName)?.country||''] || ''} ${cityName} — 18-month history</div>
+          <div class="hist-sub">${hist.start_date} → ${hist.end_date} · Daily data grouped by month</div>
         </div>
       </div>
       <div class="hist-summary">
-        <div class="hs-item"><div class="hsl">🌧 Pluja total</div><div class="hsv">${totalRain.toFixed(0)} mm</div><div class="hsm">18 mesos</div></div>
-        <div class="hs-item"><div class="hsl">☔ Mes més plujós</div><div class="hsv" style="color:#1d4ed8">${monthRain[maxRainIdx].toFixed(0)} mm</div><div class="hsm">${labelsFmt[maxRainIdx]}</div></div>
-        <div class="hs-item"><div class="hsl">🌞 Mes més sec</div><div class="hsv" style="color:#f59e0b">${monthRain[minRainIdx].toFixed(0)} mm</div><div class="hsm">${labelsFmt[minRainIdx]}</div></div>
-        <div class="hs-item"><div class="hsl">🔥 Mes més calorós</div><div class="hsv" style="color:${tempColor(monthTmax[maxTIdx])}">${monthTmax[maxTIdx]?.toFixed(1)||'—'}°</div><div class="hsm">${labelsFmt[maxTIdx]}</div></div>
-        <div class="hs-item"><div class="hsl">🥶 Mes més fred</div><div class="hsv" style="color:${tempColor(monthTmin[minTIdx])}">${monthTmin[minTIdx]?.toFixed(1)||'—'}°</div><div class="hsm">${labelsFmt[minTIdx]}</div></div>
+        <div class="hs-item"><div class="hsl">🌧 Total rain</div><div class="hsv">${totalRain.toFixed(0)} mm</div><div class="hsm">18 months</div></div>
+        <div class="hs-item"><div class="hsl">☔ Wettest month</div><div class="hsv" style="color:#1d4ed8">${monthRain[maxRainIdx].toFixed(0)} mm</div><div class="hsm">${labelsFmt[maxRainIdx]}</div></div>
+        <div class="hs-item"><div class="hsl">🌞 Driest month</div><div class="hsv" style="color:#f59e0b">${monthRain[minRainIdx].toFixed(0)} mm</div><div class="hsm">${labelsFmt[minRainIdx]}</div></div>
+        <div class="hs-item"><div class="hsl">🔥 Hottest month</div><div class="hsv" style="color:${tempColor(monthTmax[maxTIdx])}">${monthTmax[maxTIdx]?.toFixed(1)||'—'}°</div><div class="hsm">${labelsFmt[maxTIdx]}</div></div>
+        <div class="hs-item"><div class="hsl">🥶 Coldest month</div><div class="hsv" style="color:${tempColor(monthTmin[minTIdx])}">${monthTmin[minTIdx]?.toFixed(1)||'—'}°</div><div class="hsm">${labelsFmt[minTIdx]}</div></div>
       </div>
 
-      <div class="hist-chart-title">Pluja mensual (mm)</div>
+      <div class="hist-chart-title">Monthly rain (mm)</div>
       <div class="hist-chart-wrap"><canvas id="hRain"></canvas></div>
 
-      <div class="hist-chart-title" style="margin-top:22px;">Temperatura mensual mitjana (°C)</div>
+      <div class="hist-chart-title" style="margin-top:22px;">Average monthly temperature (°C)</div>
       <div class="hist-chart-wrap"><canvas id="hTemp"></canvas></div>
     </div>`;
 
@@ -775,7 +775,7 @@ function renderHistoryView(container, hist, cityName) {
     data: {
       labels: labelsFmt,
       datasets: [{
-        label: 'Pluja total mensual (mm)',
+        label: 'Monthly total rain (mm)',
         data: monthRain,
         backgroundColor: monthRain.map(v => v > 80 ? '#1e1b4b' : v > 50 ? '#1d4ed8' : v > 20 ? '#60a5fa' : v > 5 ? '#bfdbfe' : '#e0f2fe'),
         borderRadius: 4,
@@ -797,8 +797,8 @@ function renderHistoryView(container, hist, cityName) {
     data: {
       labels: labelsFmt,
       datasets: [
-        { label:'Tmax mitjana', data:monthTmax, borderColor:'#ef4444', backgroundColor:'rgba(239,68,68,.1)', tension:.35, pointRadius:3, fill:false },
-        { label:'Tmin mitjana', data:monthTmin, borderColor:'#3b82f6', backgroundColor:'rgba(59,130,246,.1)', tension:.35, pointRadius:3, fill:'-1' },
+        { label:'Avg Tmax', data:monthTmax, borderColor:'#ef4444', backgroundColor:'rgba(239,68,68,.1)', tension:.35, pointRadius:3, fill:false },
+        { label:'Avg Tmin', data:monthTmin, borderColor:'#3b82f6', backgroundColor:'rgba(59,130,246,.1)', tension:.35, pointRadius:3, fill:'-1' },
       ]
     },
     options: {
@@ -814,7 +814,7 @@ function renderHistoryView(container, hist, cityName) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════
-// PANEL DETALL
+// DETAIL PANEL
 // ══════════════════════════════════════════════════════════════════════════
 function closeDetail() {
   document.getElementById('detailPanel').classList.remove('open');
@@ -825,7 +825,7 @@ function showDetail(cityName) {
   if (!WX) return;
   document.getElementById('dCity').textContent = cityName;
   document.getElementById('dSub').textContent  =
-    `${WX.dates.start_cur} → ${WX.dates.end_cur}  |  Any passat: ${WX.dates.start_ly} → ${WX.dates.end_ly}`;
+    `${WX.dates.start_cur} → ${WX.dates.end_cur}  |  Last year: ${WX.dates.start_ly} → ${WX.dates.end_ly}`;
   closeDetail();
   const panel = document.getElementById('detailPanel');
   panel.classList.add('open');
@@ -846,21 +846,21 @@ function showDetail(cityName) {
     plugins:{legend:{display:false}} };
 
   detailCharts['cT26'] = new Chart(document.getElementById('dcT26'), { type:'line', data:{ labels:lbl26, datasets:[
-    {label:'Màx', data:seriesOf(cityName,datesCur,'tmax',0),  borderColor:'#ef4444', backgroundColor:'rgba(239,68,68,.08)', tension:.35, pointRadius:pR, fill:false},
-    {label:'Mín', data:seriesOf(cityName,datesCur,'tmin',0), borderColor:'#3b82f6', backgroundColor:'rgba(59,130,246,.08)', tension:.35, pointRadius:pR, fill:'-1'},
+    {label:'Max', data:seriesOf(cityName,datesCur,'tmax',0),  borderColor:'#ef4444', backgroundColor:'rgba(239,68,68,.08)', tension:.35, pointRadius:pR, fill:false},
+    {label:'Min', data:seriesOf(cityName,datesCur,'tmin',0), borderColor:'#3b82f6', backgroundColor:'rgba(59,130,246,.08)', tension:.35, pointRadius:pR, fill:'-1'},
   ]}, options:lineOpts });
 
   detailCharts['cR26'] = new Chart(document.getElementById('dcR26'), { type:'bar', data:{ labels:lbl26,
-    datasets:[{label:'Pluja mm', data:seriesOf(cityName,datesCur,'rain',0), backgroundColor:seriesOf(cityName,datesCur,'rain',0).map(rainBarClr), borderRadius:3}]
+    datasets:[{label:'Rain mm', data:seriesOf(cityName,datesCur,'rain',0), backgroundColor:seriesOf(cityName,datesCur,'rain',0).map(rainBarClr), borderRadius:3}]
   }, options:barOpts });
 
   detailCharts['cT25'] = new Chart(document.getElementById('dcT25'), { type:'line', data:{ labels:lbl25, datasets:[
-    {label:'Màx', data:seriesOf(cityName,datesCur,'tmax',-1), borderColor:'#ef4444', backgroundColor:'rgba(239,68,68,.08)', tension:.35, pointRadius:2, fill:false},
-    {label:'Mín', data:seriesOf(cityName,datesCur,'tmin',-1), borderColor:'#3b82f6', backgroundColor:'rgba(59,130,246,.08)', tension:.35, pointRadius:2, fill:'-1'},
+    {label:'Max', data:seriesOf(cityName,datesCur,'tmax',-1), borderColor:'#ef4444', backgroundColor:'rgba(239,68,68,.08)', tension:.35, pointRadius:2, fill:false},
+    {label:'Min', data:seriesOf(cityName,datesCur,'tmin',-1), borderColor:'#3b82f6', backgroundColor:'rgba(59,130,246,.08)', tension:.35, pointRadius:2, fill:'-1'},
   ]}, options:lineOpts });
 
   detailCharts['cR25'] = new Chart(document.getElementById('dcR25'), { type:'bar', data:{ labels:lbl25,
-    datasets:[{label:'Pluja mm', data:seriesOf(cityName,datesCur,'rain',-1), backgroundColor:seriesOf(cityName,datesCur,'rain',-1).map(rainBarClr), borderRadius:3}]
+    datasets:[{label:'Rain mm', data:seriesOf(cityName,datesCur,'rain',-1), backgroundColor:seriesOf(cityName,datesCur,'rain',-1).map(rainBarClr), borderRadius:3}]
   }, options:barOpts });
 }
 
